@@ -217,3 +217,9 @@ class Controller:
         del self.moving_image_paths[index]
 
         self.registration_channel = 0
+
+    def add_warped_moving_images(self, paths):
+        self.warped_moving_image_paths += paths
+
+    def remove_warped_moving_image(self, index):
+        del self.warped_moving_image_paths[index]

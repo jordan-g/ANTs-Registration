@@ -147,6 +147,32 @@ class PreviewWindow(QMainWindow):
 
         widget = QWidget(self)
         layout = QHBoxLayout(widget)
+        label = QLabel("Channel: ")
+        layout.addWidget(label)
+        self.moving_image_channel_combobox = QComboBox()
+        self.moving_image_channel_combobox.currentIndexChanged.connect(self.update_moving_image_channel)
+        layout.addWidget(self.moving_image_channel_combobox)
+        self.main_layout.addWidget(widget, 3, 1)
+
+        widget = QWidget(self)
+        layout = QHBoxLayout(widget)
+        label = QLabel("Channel: ")
+        layout.addWidget(label)
+        self.warped_moving_image_channel_combobox = QComboBox()
+        self.warped_moving_image_channel_combobox.currentIndexChanged.connect(self.update_warped_moving_image_channel)
+        layout.addWidget(self.warped_moving_image_channel_combobox)
+        self.main_layout.addWidget(widget, 3, 2)
+
+        widget = QWidget(self)
+        layout = QHBoxLayout(widget)
+        self.registration_channel_checkbox = QCheckBox("Use this channel for registration")
+        self.registration_channel_checkbox.clicked.connect(self.toggle_registration_channel)
+        self.registration_channel_checkbox.setChecked(True)
+        layout.addWidget(self.registration_channel_checkbox)
+        self.main_layout.addWidget(widget, 4, 1)
+
+        widget = QWidget(self)
+        layout = QHBoxLayout(widget)
         label = QLabel("Alpha: ")
         layout.addWidget(label)
         self.overlay_alpha_slider = QSlider()
@@ -165,32 +191,6 @@ class PreviewWindow(QMainWindow):
 
         widget = QWidget(self)
         layout = QHBoxLayout(widget)
-        # layout.addStretch()
-        self.select_fixed_image_button = QPushButton("Select fixed image...")
-        self.select_fixed_image_button.clicked.connect(self.select_fixed_image)
-        layout.addWidget(self.select_fixed_image_button)
-        layout.addStretch()
-        self.main_layout.addWidget(widget, 6, 0)
-
-        widget = QWidget(self)
-        layout = QHBoxLayout(widget)
-        label = QLabel("Channel: ")
-        layout.addWidget(label)
-        self.moving_image_channel_combobox = QComboBox()
-        self.moving_image_channel_combobox.currentIndexChanged.connect(self.update_moving_image_channel)
-        layout.addWidget(self.moving_image_channel_combobox)
-        self.main_layout.addWidget(widget, 3, 1)
-
-        widget = QWidget(self)
-        layout = QHBoxLayout(widget)
-        self.registration_channel_checkbox = QCheckBox("Use this channel for registration")
-        self.registration_channel_checkbox.clicked.connect(self.toggle_registration_channel)
-        self.registration_channel_checkbox.setChecked(True)
-        layout.addWidget(self.registration_channel_checkbox)
-        self.main_layout.addWidget(widget, 4, 1)
-
-        widget = QWidget(self)
-        layout = QHBoxLayout(widget)
         self.select_moving_image_button = QPushButton("Add moving image channel(s)...")
         self.select_moving_image_button.clicked.connect(self.select_moving_image)
         layout.addWidget(self.select_moving_image_button)
@@ -198,16 +198,18 @@ class PreviewWindow(QMainWindow):
         self.delete_moving_image_button = QPushButton("Remove channel")
         self.delete_moving_image_button.clicked.connect(self.delete_moving_image)
         layout.addWidget(self.delete_moving_image_button)
-        self.main_layout.addWidget(widget, 6, 1)
+        self.main_layout.addWidget(widget, 5, 1)
 
         widget = QWidget(self)
         layout = QHBoxLayout(widget)
-        label = QLabel("Channel: ")
-        layout.addWidget(label)
-        self.warped_moving_image_channel_combobox = QComboBox()
-        self.warped_moving_image_channel_combobox.currentIndexChanged.connect(self.update_warped_moving_image_channel)
-        layout.addWidget(self.warped_moving_image_channel_combobox)
-        self.main_layout.addWidget(widget, 3, 2)
+        self.select_warped_moving_image_button = QPushButton("Add warped image channel(s)...")
+        self.select_warped_moving_image_button.clicked.connect(self.select_warped_moving_image)
+        layout.addWidget(self.select_warped_moving_image_button)
+        layout.addStretch()
+        self.delete_warped_moving_image_button = QPushButton("Remove channel")
+        self.delete_warped_moving_image_button.clicked.connect(self.delete_warped_moving_image)
+        layout.addWidget(self.delete_warped_moving_image_button)
+        self.main_layout.addWidget(widget, 5, 2)
 
         widget = QWidget(self)
         layout = QHBoxLayout(widget)
@@ -231,7 +233,16 @@ class PreviewWindow(QMainWindow):
         self.syn_checkbox.clicked.connect(self.toggle_syn)
         self.syn_checkbox.setChecked(self.controller.params["syn"])
         layout.addWidget(self.syn_checkbox)
-        self.main_layout.addWidget(widget, 5, 2)
+        self.main_layout.addWidget(widget, 6, 2)
+
+        widget = QWidget(self)
+        layout = QHBoxLayout(widget)
+        # layout.addStretch()
+        self.select_fixed_image_button = QPushButton("Select fixed image...")
+        self.select_fixed_image_button.clicked.connect(self.select_fixed_image)
+        layout.addWidget(self.select_fixed_image_button)
+        layout.addStretch()
+        self.main_layout.addWidget(widget, 7, 0)
 
         widget = QWidget(self)
         layout = QHBoxLayout(widget)
@@ -247,7 +258,7 @@ class PreviewWindow(QMainWindow):
         self.register_button.clicked.connect(self.controller.register)
         self.register_button.setStyleSheet("font-weight: bold;")
         layout.addWidget(self.register_button)
-        self.main_layout.addWidget(widget, 6, 2)
+        self.main_layout.addWidget(widget, 7, 2)
 
         self.setCentralWidget(self.main_widget)
 
@@ -383,6 +394,21 @@ class PreviewWindow(QMainWindow):
 
         self.update_shell_command()
 
+    def select_warped_moving_image(self):
+        video_paths = QFileDialog.getOpenFileNames(self, 'Select warped image(s).', '', 'NIFTI Files (*.nii)')[0]
+
+        video_paths = [ video_path for video_path in video_paths if video_path not in self.controller.warped_moving_image_paths ]
+        
+        if len(video_paths) > 0:
+            warped_moving_image = nib.load(video_paths[0]).get_fdata()
+            self.update_warped_moving_image(warped_moving_image)
+            
+            self.controller.add_warped_moving_images(video_paths)
+
+            self.warped_moving_image_channel_combobox.addItems(video_paths)
+            self.warped_moving_image_channel_combobox.setCurrentIndex(len(self.controller.warped_moving_image_paths)-1)
+            self.warped_moving_image_channel = len(self.controller.warped_moving_image_paths)-1
+
     def update_warped_moving_image_combobox(self):
         self.warped_moving_image_channel_combobox.clear()
         self.warped_moving_image_channel_combobox.addItems(self.controller.warped_moving_image_paths)
@@ -426,6 +452,18 @@ class PreviewWindow(QMainWindow):
             self.moving_image_z_slider.setMaximum(0)
 
         self.update_shell_command()
+
+    def delete_warped_moving_image(self):
+        self.controller.remove_warped_moving_image(self.warped_moving_image_channel)
+        
+        self.warped_moving_image_channel_combobox.removeItem(self.warped_moving_image_channel)
+
+        self.warped_moving_image_channel = 0
+
+        if len(self.controller.warped_moving_image_paths) > 0:
+            self.update_warped_moving_image_channel(self.warped_moving_image_channel)
+        else:
+            self.warped_moving_image_item.setImage(None)
 
     def toggle_registration_channel(self):
         use_channel_for_registration = self.registration_channel_checkbox.isChecked()
@@ -641,6 +679,9 @@ class ParamWindow(QMainWindow):
 
         self.preview_window.update_shell_command()
 
+        self.update_form_layout(self.translation_metric_form_layout)
+        self.update_form_layout(self.translation_form_layout)
+
     def toggle_rigid(self):
         self.preview_window.rigid_checkbox.setChecked(self.rigid_checkbox.isChecked())
         self.rigid_group_box.setEnabled(self.rigid_checkbox.isChecked())
@@ -648,6 +689,9 @@ class ParamWindow(QMainWindow):
         self.controller.params["rigid"] = self.rigid_checkbox.isChecked()
 
         self.preview_window.update_shell_command()
+
+        self.update_form_layout(self.rigid_metric_form_layout)
+        self.update_form_layout(self.rigid_form_layout)
 
     def toggle_affine(self):
         self.preview_window.affine_checkbox.setChecked(self.affine_checkbox.isChecked())
@@ -657,6 +701,9 @@ class ParamWindow(QMainWindow):
 
         self.preview_window.update_shell_command()
 
+        self.update_form_layout(self.affine_metric_form_layout)
+        self.update_form_layout(self.affine_form_layout)
+
     def toggle_syn(self):
         self.preview_window.syn_checkbox.setChecked(self.syn_checkbox.isChecked())
         self.syn_group_box.setEnabled(self.syn_checkbox.isChecked())
@@ -664,6 +711,9 @@ class ParamWindow(QMainWindow):
         self.controller.params["syn"] = self.syn_checkbox.isChecked()
 
         self.preview_window.update_shell_command()
+
+        self.update_form_layout(self.syn_metric_form_layout)
+        self.update_form_layout(self.syn_form_layout)
 
     def update_widgets(self):
         self.translation_checkbox.setChecked(self.preview_window.translation_checkbox.isChecked())
@@ -729,17 +779,22 @@ class ParamWindow(QMainWindow):
         elif form_layout is self.translation_form_layout:
             self.clear_layout(self.translation_form_layout)
 
-            self.add_text_param("gradient_step", "Gradient step", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
-            self.add_text_param("num_iterations", "Number of iterations", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
-            self.add_text_param("convergence_threshold", "Convergence threshold", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
-            self.add_text_param("convergence_window_size", "Convergence window size", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
-            self.add_text_param("shrink_factors", "Shrink factors", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
-            self.add_text_param("gaussian_sigma", "Gaussian smoothing sigma", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
-            self.add_combobox_param("metric", "Metric", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params, ["Cross-Correlation", "Mutual Information"], form_layout_to_update=self.translation_metric_form_layout)
-        elif form_layout is self.translation_metric_form_layout:
-            self.translation_metric_group_box.setTitle("{} Metric Parameters".format(self.controller.translation_params["metric"]))
+            if self.translation_checkbox.isChecked():
+                self.translation_group_box.show()
 
+                self.add_text_param("gradient_step", "Gradient step", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
+                self.add_text_param("num_iterations", "Number of iterations", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
+                self.add_text_param("convergence_threshold", "Convergence threshold", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
+                self.add_text_param("convergence_window_size", "Convergence window size", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
+                self.add_text_param("shrink_factors", "Shrink factors", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
+                self.add_text_param("gaussian_sigma", "Gaussian smoothing sigma", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params)
+                self.add_combobox_param("metric", "Metric", self.translation_form_layout, self.translation_param_widgets, self.controller.translation_params, ["Cross-Correlation", "Mutual Information"], form_layout_to_update=self.translation_metric_form_layout)
+            else:
+                self.translation_group_box.hide()
+        elif form_layout is self.translation_metric_form_layout:
             self.clear_layout(self.translation_metric_form_layout)
+            
+            self.translation_metric_group_box.setTitle("{} Metric Parameters".format(self.controller.translation_params["metric"]))
 
             if self.controller.translation_params["metric"] == "Cross-Correlation":
                 self.add_text_param("metric_weight", "Metric weight", self.translation_metric_form_layout, self.translation_metric_param_widgets, self.controller.translation_cross_correlation_params)
@@ -751,16 +806,22 @@ class ParamWindow(QMainWindow):
                 self.add_text_param("num_bins", "Number of bins", self.translation_metric_form_layout, self.translation_metric_param_widgets, self.controller.translation_mutual_information_params)
                 self.add_combobox_param("sampling_strategy", "Sampling strategy", self.translation_metric_form_layout, self.translation_metric_param_widgets, self.controller.translation_mutual_information_params, ["None", "Regular", "Random"])
                 self.add_text_param("sampling_percentage", "Sampling percentage", self.translation_metric_form_layout, self.translation_metric_param_widgets, self.controller.translation_mutual_information_params)
+
         elif form_layout is self.rigid_form_layout:
             self.clear_layout(self.rigid_form_layout)
 
-            self.add_text_param("gradient_step", "Gradient step", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
-            self.add_text_param("num_iterations", "Number of iterations", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
-            self.add_text_param("convergence_threshold", "Convergence threshold", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
-            self.add_text_param("convergence_window_size", "Convergence window size", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
-            self.add_text_param("shrink_factors", "Shrink factors", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
-            self.add_text_param("gaussian_sigma", "Gaussian smoothing sigma", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
-            self.add_combobox_param("metric", "Metric", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params, ["Cross-Correlation", "Mutual Information"], form_layout_to_update=self.rigid_metric_form_layout)
+            if self.rigid_checkbox.isChecked():
+                self.rigid_group_box.show()
+                
+                self.add_text_param("gradient_step", "Gradient step", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
+                self.add_text_param("num_iterations", "Number of iterations", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
+                self.add_text_param("convergence_threshold", "Convergence threshold", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
+                self.add_text_param("convergence_window_size", "Convergence window size", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
+                self.add_text_param("shrink_factors", "Shrink factors", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
+                self.add_text_param("gaussian_sigma", "Gaussian smoothing sigma", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params)
+                self.add_combobox_param("metric", "Metric", self.rigid_form_layout, self.rigid_param_widgets, self.controller.rigid_params, ["Cross-Correlation", "Mutual Information"], form_layout_to_update=self.rigid_metric_form_layout)
+            else:
+                self.rigid_group_box.hide()
         elif form_layout is self.rigid_metric_form_layout:
             self.rigid_metric_group_box.setTitle("{} Metric Parameters".format(self.controller.rigid_params["metric"]))
 
@@ -777,15 +838,20 @@ class ParamWindow(QMainWindow):
                 self.add_combobox_param("sampling_strategy", "Sampling strategy", self.rigid_metric_form_layout, self.rigid_metric_param_widgets, self.controller.rigid_mutual_information_params, ["None", "Regular", "Random"])
                 self.add_text_param("sampling_percentage", "Sampling percentage", self.rigid_metric_form_layout, self.rigid_metric_param_widgets, self.controller.rigid_mutual_information_params)
         elif form_layout is self.affine_form_layout:
-            self.clear_layout(self.affine_form_layout)
+            if self.affine_checkbox.isChecked():
+                self.affine_group_box.show()
+                
+                self.clear_layout(self.affine_form_layout)
 
-            self.add_text_param("gradient_step", "Gradient step", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
-            self.add_text_param("num_iterations", "Number of iterations", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
-            self.add_text_param("convergence_threshold", "Convergence threshold", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
-            self.add_text_param("convergence_window_size", "Convergence window size", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
-            self.add_text_param("shrink_factors", "Shrink factors", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
-            self.add_text_param("gaussian_sigma", "Gaussian smoothing sigma", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
-            self.add_combobox_param("metric", "Metric", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params, ["Cross-Correlation", "Mutual Information"], form_layout_to_update=self.affine_metric_form_layout)
+                self.add_text_param("gradient_step", "Gradient step", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
+                self.add_text_param("num_iterations", "Number of iterations", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
+                self.add_text_param("convergence_threshold", "Convergence threshold", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
+                self.add_text_param("convergence_window_size", "Convergence window size", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
+                self.add_text_param("shrink_factors", "Shrink factors", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
+                self.add_text_param("gaussian_sigma", "Gaussian smoothing sigma", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params)
+                self.add_combobox_param("metric", "Metric", self.affine_form_layout, self.affine_param_widgets, self.controller.affine_params, ["Cross-Correlation", "Mutual Information"], form_layout_to_update=self.affine_metric_form_layout)
+            else:
+                self.affine_group_box.hide()
         elif form_layout is self.affine_metric_form_layout:
             self.affine_metric_group_box.setTitle("{} Metric Parameters".format(self.controller.affine_params["metric"]))
 
@@ -802,17 +868,22 @@ class ParamWindow(QMainWindow):
                 self.add_combobox_param("sampling_strategy", "Sampling strategy", self.affine_metric_form_layout, self.affine_metric_param_widgets, self.controller.affine_mutual_information_params, ["None", "Regular", "Random"])
                 self.add_text_param("sampling_percentage", "Sampling percentage", self.affine_metric_form_layout, self.affine_metric_param_widgets, self.controller.affine_mutual_information_params)
         elif form_layout is self.syn_form_layout:
-            self.clear_layout(self.syn_form_layout)
+            if self.syn_checkbox.isChecked():
+                self.syn_group_box.show()
 
-            self.add_text_param("gradient_step", "Gradient step", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
-            self.add_text_param("update_field_variance", "Update field variance", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
-            self.add_text_param("total_field_variance", "Total field variance", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
-            self.add_text_param("num_iterations", "Number of iterations", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
-            self.add_text_param("convergence_threshold", "Convergence threshold", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
-            self.add_text_param("convergence_window_size", "Convergence window size", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
-            self.add_text_param("shrink_factors", "Shrink factors", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
-            self.add_text_param("gaussian_sigma", "Gaussian smoothing sigma", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
-            self.add_combobox_param("metric", "Metric", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params, ["Cross-Correlation", "Mutual Information"], form_layout_to_update=self.syn_metric_form_layout)
+                self.clear_layout(self.syn_form_layout)
+
+                self.add_text_param("gradient_step", "Gradient step", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
+                self.add_text_param("update_field_variance", "Update field variance", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
+                self.add_text_param("total_field_variance", "Total field variance", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
+                self.add_text_param("num_iterations", "Number of iterations", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
+                self.add_text_param("convergence_threshold", "Convergence threshold", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
+                self.add_text_param("convergence_window_size", "Convergence window size", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
+                self.add_text_param("shrink_factors", "Shrink factors", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
+                self.add_text_param("gaussian_sigma", "Gaussian smoothing sigma", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params)
+                self.add_combobox_param("metric", "Metric", self.syn_form_layout, self.syn_param_widgets, self.controller.syn_params, ["Cross-Correlation", "Mutual Information"], form_layout_to_update=self.syn_metric_form_layout)
+            else:
+                self.syn_group_box.hide()
         elif form_layout is self.syn_metric_form_layout:
             self.syn_metric_group_box.setTitle("{} Metric Parameters".format(self.controller.syn_params["metric"]))
 
