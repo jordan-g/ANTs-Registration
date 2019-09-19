@@ -364,7 +364,7 @@ class PreviewWindow(QMainWindow):
         self.moving_image_item.setImage(cv2.cvtColor(self.moving_image[:, :, self.moving_image_z], cv2.COLOR_GRAY2RGB), levels=(0, 255))
 
     def select_fixed_image(self):
-        video_paths = QFileDialog.getOpenFileNames(self, 'Select fixed image.', '', 'NIFTI Files (*.nii )')[0]
+        video_paths = QFileDialog.getOpenFileNames(self, 'Select fixed image.', '', 'NIFTI Files (*.nii *.nii.gz)')[0]
         
         if len(video_paths) > 0:
             fixed_image = nib.load(video_paths[0]).get_fdata()
@@ -375,7 +375,7 @@ class PreviewWindow(QMainWindow):
         self.update_shell_command()
 
     def select_moving_image(self):
-        video_paths = QFileDialog.getOpenFileNames(self, 'Select moving image(s).', '', 'NIFTI Files (*.nii )')[0]
+        video_paths = QFileDialog.getOpenFileNames(self, 'Select moving image(s).', '', 'NIFTI Files (*.nii *.nii.gz)')[0]
 
         video_paths = [ video_path for video_path in video_paths if video_path not in self.controller.moving_image_paths ]
         
@@ -395,7 +395,7 @@ class PreviewWindow(QMainWindow):
         self.update_shell_command()
 
     def select_warped_moving_image(self):
-        video_paths = QFileDialog.getOpenFileNames(self, 'Select warped image(s).', '', 'NIFTI Files (*.nii)')[0]
+        video_paths = QFileDialog.getOpenFileNames(self, 'Select warped image(s).', '', 'NIFTI Files (*.nii *.nii.gz)')[0]
 
         video_paths = [ video_path for video_path in video_paths if video_path not in self.controller.warped_moving_image_paths ]
         

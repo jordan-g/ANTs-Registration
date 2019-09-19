@@ -121,13 +121,16 @@ class Controller:
 
             self.warped_moving_image_paths = []
 
-            moving_image_path = self.moving_image_paths[self.registration_channel]
+            for i in range(len(self.moving_image_paths)):
+                moving_image_path = self.moving_image_paths[i]
 
-            directory       = os.path.dirname(self.fixed_image_path)
-            fixed_filename  = os.path.splitext(os.path.basename(self.fixed_image_path))[0]
-            moving_filename = os.path.splitext(os.path.basename(moving_image_path))[0]
+                directory       = os.path.dirname(self.fixed_image_path)
+                fixed_filename  = os.path.splitext(os.path.basename(self.fixed_image_path))[0]
+                moving_filename = os.path.splitext(os.path.basename(moving_image_path))[0]
 
-            warped_moving_image_path = os.path.join(directory, "{}_warped_to_{}.nii.gz".format(moving_filename, fixed_filename))
+                warped_moving_image_path = os.path.join(directory, "{}_warped_to_{}.nii.gz".format(moving_filename, fixed_filename))
+
+                self.warped_moving_image_paths.append(warped_moving_image_path)
 
             with subprocess.Popen(self.shell_command, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True) as p:
                 for line in p.stdout:
@@ -135,11 +138,6 @@ class Controller:
 
             if p.returncode != 0:
                 raise subprocess.CalledProcessError(p.returncode, p.args)
-
-             # TODO: warp other channels as well
-
-
-            self.warped_moving_image_paths.append(warped_moving_image_path)
 
             self.preview_window.update_warped_moving_image_combobox()
             self.preview_window.show_warped_moving_image()
@@ -207,6 +205,26 @@ class Controller:
                 self.shell_command += " -c [{},{},{}]".format(self.syn_params["num_iterations"], self.syn_params["convergence_threshold"], self.syn_params["convergence_window_size"])
 
                 self.shell_command += " -f {} -s {}".format(self.syn_params["shrink_factors"], self.syn_params["gaussian_sigma"])
+
+            if len(self.moving_image_paths) > 1:
+                warp_path   = os.path.join(os.getcwd(), "warp_1Warp.nii.gz")
+                affine_path = os.path.join(os.getcwd(), "warp_0GenericAffine.mat")
+
+                for i in range(len(self.moving_image_paths)):
+                    if i != self.registration_channel:
+                        moving_image_path = self.moving_image_paths[i]
+                        fixed_filename  = os.path.splitext(os.path.basename(self.fixed_image_path))[0]
+                        moving_filename = os.path.splitext(os.path.basename(moving_image_path))[0]
+
+                        warped_moving_image_path = os.path.join(directory, "{}_warped_to_{}.nii.gz".format(moving_filename, fixed_filename))
+
+                        a = warped_moving_image_path.replace(" ", "\ ")
+                        b = self.fixed_image_path.replace(" ", "\ ")
+                        c = moving_image_path.replace(" ", "\ ")
+                        d = warp_path.replace(" ", "\ ")
+                        e = affine_path.replace(" ", "\ ")
+
+                        self.shell_command += " && antsApplyTransforms -d 3 -i {} -r {} -t {} -t {} -o {}".format(c, b, d, e, a)
         else:
             self.shell_command = ""
 
